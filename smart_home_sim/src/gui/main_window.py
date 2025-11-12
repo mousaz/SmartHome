@@ -172,6 +172,10 @@ class SmartHomeMainWindow:
         self.sensor_panel = SensorPanel(self.right_paned, self.sim_engine, self.logger)
         self.right_paned.add(self.sensor_panel.frame, weight=1)
         
+        # Connect bidirectional selection between home view and sensor panel
+        self.home_view.set_selection_callback(self.on_home_view_selection_changed)
+        self.sensor_panel.set_selection_callback(self.on_sensor_panel_selection_changed)
+        
         # Rules panel
         self.rules_panel = RulesPanel(self.right_paned, self.sim_engine, self.logger)
         self.right_paned.add(self.rules_panel.frame, weight=1)
@@ -311,7 +315,7 @@ class SmartHomeMainWindow:
         if template:
             self.current_template = template
             self.sim_engine.load_template(template)
-            self.home_view.home_template = self.current_template
+            self.home_view.load_template(template)
             self.refresh_all_panels()
     
     def add_sensor_dialog(self):
@@ -401,6 +405,17 @@ class SmartHomeMainWindow:
             else:  # Cancel
                 return False
         return True
+    
+    # Selection synchronization between home view and sensor panel
+    def on_home_view_selection_changed(self, sensor_id: str):
+        """Handle selection change from home view."""
+        # Update sensor panel selection without triggering callback
+        self.sensor_panel.select_sensor_external(sensor_id)
+    
+    def on_sensor_panel_selection_changed(self, sensor_id: str):
+        """Handle selection change from sensor panel."""
+        # Update home view selection without triggering callback
+        self.home_view.select_sensor_external(sensor_id)
     
     # Placeholder methods for menu items
     def export_config(self): pass

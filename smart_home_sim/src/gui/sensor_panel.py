@@ -339,6 +339,7 @@ class SensorPanel:
         self.parent = parent
         self.sim_engine = simulation_engine
         self.logger = logger
+        self.selection_callback = None  # Callback for selection changes
         
         self.setup_ui()
         self.refresh()
@@ -387,6 +388,7 @@ class SensorPanel:
         # Bind events
         self.tree.bind('<Double-1>', self.on_double_click)
         self.tree.bind('<Button-3>', self.on_right_click)
+        self.tree.bind('<<TreeviewSelect>>', self.on_selection_changed)
         
         # Context menu
         self.context_menu = tk.Menu(self.frame, tearoff=0)
@@ -574,6 +576,36 @@ class SensorPanel:
         if item:
             self.tree.selection_set(item)
             self.context_menu.post(event.x_root, event.y_root)
+    
+    def on_selection_changed(self, event):
+        """Handle tree view selection change."""
+        selection = self.tree.selection()
+        if selection and self.selection_callback:
+            # Get sensor ID from the selected item
+            item = selection[0]
+            sensor_id = self.tree.item(item)['values'][0]  # Assuming first column has ID
+            self.selection_callback(sensor_id)
+        elif not selection and self.selection_callback:
+            # No selection - notify with empty string
+            self.selection_callback("")
+    
+    def select_sensor_external(self, sensor_id: str):
+        """Select a sensor from external source (no callback)."""
+        # Clear current selection
+        self.tree.selection_remove(self.tree.selection())
+        
+        if sensor_id:
+            # Find the item with matching sensor ID
+            for item in self.tree.get_children():
+                values = self.tree.item(item)['values']
+                if values and values[0] == sensor_id:
+                    self.tree.selection_set(item)
+                    self.tree.see(item)  # Scroll to make it visible
+                    break
+    
+    def set_selection_callback(self, callback):
+        """Set callback function for selection changes."""
+        self.selection_callback = callback
     
     def on_simulation_event(self, event):
         """Handle simulation events."""

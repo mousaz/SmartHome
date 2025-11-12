@@ -247,3 +247,99 @@
 2025-11-12 12:42:26 - INFO - [general] - Sensor Living Room Temp moved to position (717, 41)
 2025-11-12 12:42:28 - INFO - [general] - Sensor Living Room Temp moved to position (323, 81)
 2025-11-12 12:42:36 - INFO - [general] - Sensor Living Room Temp moved to position (315, 348)
+2025-11-12 12:55:25 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 12:55:25 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 12:55:25 - INFO - [general] - Simulation engine initialized
+2025-11-12 12:55:30 - INFO - [general] - Added sensor: Main Temperature (temperature)
+2025-11-12 12:55:30 - INFO - [general] - Added sensor: Entry Motion (motion)
+2025-11-12 12:55:30 - INFO - [general] - Added sensor: Main Door (door_window)
+2025-11-12 12:55:30 - INFO - [general] - Loaded template: Studio Apartment
+2025-11-12 12:55:30 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 12:55:30 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 12:55:30 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 12:55:30 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 12:55:30 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 12:56:12 - INFO - [general] - Updated configuration for sensor: Main Door
+2025-11-12 12:57:43 - INFO - [general] - Updated configuration for sensor: Main Door
+2025-11-12 13:58:05 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 13:58:05 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 13:58:05 - INFO - [general] - Simulation engine initialized
+2025-11-12 13:58:11 - INFO - [general] - Added sensor: Main Temperature (temperature)
+2025-11-12 13:58:11 - INFO - [general] - Added sensor: Entry Motion (motion)
+2025-11-12 13:58:11 - INFO - [general] - Added sensor: Main Door (door_window)
+2025-11-12 13:58:11 - INFO - [general] - Loaded template: Studio Apartment
+2025-11-12 13:58:11 - INFO - [general] - Loading template: Studio Apartment
+2025-11-12 13:58:11 - INFO - [general] - Template has image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:11 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:11 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:11 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 13:58:11 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 13:58:11 - INFO - [general] - Background image created with ID: 1
+2025-11-12 13:58:11 - INFO - [general] - Canvas has 1 items total
+2025-11-12 13:58:11 - INFO - [general] - Canvas has 1 background items
+2025-11-12 13:58:11 - INFO - [general] - Background image state: normal
+2025-11-12 13:58:11 - INFO - [general] - Background image coordinates: [234.0, 269.0]
+2025-11-12 13:58:11 - INFO - [general] - PhotoImage reference exists
+2025-11-12 13:58:11 - INFO - [general] - Added sensor Main Temperature to home view at (175, 150)
+2025-11-12 13:58:11 - INFO - [general] - Added sensor Entry Motion to home view at (100, 100)
+2025-11-12 13:58:11 - INFO - [general] - Added sensor Main Door to home view at (225, 50)
+2025-11-12 13:58:11 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:11 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:11 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 13:58:11 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 13:58:11 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 13:58:20 - INFO - [general] - Sensor Main Door moved to position (370, 205)
+2025-11-12 13:58:51 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 13:58:51 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 13:58:51 - INFO - [general] - Simulation engine initialized
+2025-11-12 13:58:55 - INFO - [general] - Added sensor: Main Temperature (temperature)
+2025-11-12 13:58:55 - INFO - [general] - Added sensor: Entry Motion (motion)
+2025-11-12 13:58:55 - INFO - [general] - Added sensor: Main Door (door_window)
+2025-11-12 13:58:55 - INFO - [general] - Loaded template: Studio Apartment
+2025-11-12 13:58:55 - INFO - [general] - Loading template: Studio Apartment
+2025-11-12 13:58:55 - INFO - [general] - Template has image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:55 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:55 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:55 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 13:58:55 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 13:58:55 - INFO - [general] - Background image created with ID: 1
+2025-11-12 13:58:55 - INFO - [general] - Canvas has 1 items total
+2025-11-12 13:58:55 - INFO - [general] - Canvas has 1 background items
+2025-11-12 13:58:55 - INFO - [general] - Background image state: normal
+2025-11-12 13:58:55 - INFO - [general] - Background image coordinates: [234.0, 269.0]
+2025-11-12 13:58:55 - INFO - [general] - PhotoImage reference exists
+2025-11-12 13:58:55 - INFO - [general] - Added sensor Main Temperature to home view at (175, 150)
+2025-11-12 13:58:55 - INFO - [general] - Added sensor Entry Motion to home view at (100, 100)
+2025-11-12 13:58:55 - INFO - [general] - Added sensor Main Door to home view at (225, 50)
+2025-11-12 13:58:55 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:55 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 13:58:55 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 13:58:55 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 13:58:55 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 14:00:38 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 14:00:38 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 14:00:38 - INFO - [general] - Simulation engine initialized
+2025-11-12 14:00:45 - INFO - [general] - Added sensor: Main Temperature (temperature)
+2025-11-12 14:00:45 - INFO - [general] - Added sensor: Entry Motion (motion)
+2025-11-12 14:00:45 - INFO - [general] - Added sensor: Main Door (door_window)
+2025-11-12 14:00:45 - INFO - [general] - Loaded template: Studio Apartment
+2025-11-12 14:00:45 - INFO - [general] - Loading template: Studio Apartment
+2025-11-12 14:00:45 - INFO - [general] - Template has image: resources/images/houses/2bedroom001.jpg
+2025-11-12 14:00:45 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 14:00:45 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 14:00:45 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 14:00:45 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 14:00:45 - INFO - [general] - Background image created with ID: 1
+2025-11-12 14:00:45 - INFO - [general] - Canvas has 1 items total
+2025-11-12 14:00:45 - INFO - [general] - Canvas has 1 background items
+2025-11-12 14:00:45 - INFO - [general] - Background image state: normal
+2025-11-12 14:00:45 - INFO - [general] - Background image coordinates: [234.0, 269.0]
+2025-11-12 14:00:45 - INFO - [general] - PhotoImage reference exists
+2025-11-12 14:00:45 - INFO - [general] - Added sensor Main Temperature to home view at (175, 150)
+2025-11-12 14:00:45 - INFO - [general] - Added sensor Entry Motion to home view at (100, 100)
+2025-11-12 14:00:45 - INFO - [general] - Added sensor Main Door to home view at (225, 50)
+2025-11-12 14:00:45 - INFO - [general] - Attempting to load image: resources/images/houses/2bedroom001.jpg
+2025-11-12 14:00:45 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/2bedroom001.jpg
+2025-11-12 14:00:45 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 14:00:45 - INFO - [general] - Background image loaded - skipping architectural drawing
+2025-11-12 14:00:45 - INFO - [general] - Application GUI initialized successfully

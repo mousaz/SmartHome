@@ -135,6 +135,40 @@ class SimulationEngine:
         return [sensor for sensor in self.sensors.values() 
                 if sensor.get_sensor_type() == sensor_type]
     
+    def create_sensor_from_template(self, sensor_data: Dict[str, Any]) -> Optional[BaseSensor]:
+        """Create a sensor instance from template data."""
+        try:
+            sensor_type = sensor_data.get('type')
+            if not sensor_type:
+                self.log_error("Sensor template missing 'type' field")
+                return None
+            
+            # Create sensor using registry
+            sensor = sensor_registry.create_sensor(
+                sensor_type,
+                name=sensor_data.get('name', f"{sensor_type}_sensor"),
+                location=tuple(sensor_data.get('location', [100, 100])),
+                config=sensor_data.get('config', {})
+            )
+            
+            if sensor:
+                # Apply additional template properties
+                if 'sensor_id' in sensor_data:
+                    sensor.sensor_id = sensor_data['sensor_id']
+                
+                if 'status' in sensor_data:
+                    sensor.status = sensor_data['status']
+                
+                self.log_info(f"Created sensor from template: {sensor.name} ({sensor_type})")
+                return sensor
+            else:
+                self.log_error(f"Failed to create sensor of type: {sensor_type}")
+                return None
+                
+        except Exception as e:
+            self.log_error(f"Error creating sensor from template: {str(e)}")
+            return None
+    
     # Rules management (placeholder)
     def add_rule(self, rule) -> bool:
         """Add an automation rule."""
@@ -328,12 +362,7 @@ class SimulationEngine:
             
             # Load sensors from template
             for sensor_data in template_data.get('sensors', []):
-                sensor = sensor_registry.create_sensor(
-                    sensor_data['type'],
-                    name=sensor_data.get('name', f"{sensor_data['type']}_sensor"),
-                    location=tuple(sensor_data.get('location', [100, 100])),
-                    config=sensor_data.get('config', {})
-                )
+                sensor = self.create_sensor(sensor_data)
                 
                 if sensor:
                     self.add_sensor(sensor)
@@ -343,6 +372,14 @@ class SimulationEngine:
             
         except Exception as e:
             self.log_error(f"Failed to load template: {str(e)}")
+
+    def create_sensor(self, sensor_data: Dict[str, Any]):
+        return sensor_registry.create_sensor(
+                    sensor_data['type'],
+                    name=sensor_data.get('name', f"{sensor_data['type']}_sensor"),
+                    location=tuple(sensor_data.get('location', [100, 100])),
+                    config=sensor_data.get('config', {})
+                )
     
     def save_project(self, filename: str):
         """Save current project to file."""

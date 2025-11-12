@@ -213,6 +213,13 @@ class SensorWidget:
             )
             self.canvas.after(2000, lambda: self.canvas.delete('smoke_alarm'))
     
+    def contains(self, x: float, y: float) -> bool:
+        """Check if the given coordinates are within this sensor widget."""
+        # Check if point is within the sensor circle bounds
+        dx = abs(x - self.x)
+        dy = abs(y - self.y)
+        return dx <= self.size//2 and dy <= self.size//2
+    
     def destroy(self):
         """Remove sensor widget from canvas."""
         for widget_id in [self.circle_id, self.status_id, self.label_id, self.selection_id]:
@@ -233,6 +240,7 @@ class HomeView:
         self.background_image = None  # PIL Image object
         self.background_photo = None  # PhotoImage for tkinter
         self.background_image_id = None  # Canvas image item ID
+        self.selection_callback = None  # Callback for selection changes
         
         self.setup_ui()
         self.setup_context_menu()
@@ -321,6 +329,9 @@ class HomeView:
 
         # Draw background image if available
         image_loaded = self.draw_background_image()
+
+        # Draw sensors
+        self.ensure_sensors_on_top()
         
         # If an image is loaded, don't draw any architectural elements or labels
         # The image serves as the complete house layout
@@ -549,15 +560,17 @@ class HomeView:
             self.sensor_widgets[sensor.sensor_id] = widget
             
             # Ensure sensor is drawn above background image
-            self.ensure_sensors_on_top()
+            self.ensure_sensor_on_top(widget)
             
             self.logger.info(f"Added sensor {sensor.name} to home view at ({x}, {y})")
     
     def ensure_sensors_on_top(self):
         """Ensure all sensor widgets are drawn above the background image."""
         # Raise all sensor-related canvas items to the top
-        for widget in self.sensor_widgets.values():
-            for item_id in [widget.circle_id, widget.status_id, widget.label_id, widget.selection_id]:
+        [self.ensure_sensor_on_top(widget) for widget in self.sensor_widgets.values()]
+    
+    def ensure_sensor_on_top(self, widget):
+        for item_id in [widget.circle_id, widget.status_id, widget.label_id, widget.selection_id]:
                 self.canvas.tag_raise(item_id)
     
     def remove_sensor(self, sensor_id: str):
@@ -578,7 +591,22 @@ class HomeView:
             widget.update_reading_indicator(reading)
     
     def select_sensor(self, sensor_id: str):
-        """Select a sensor."""
+        """Select a sensor and notify callback."""
+        # Deselect previous
+        if self.selected_sensor_id and self.selected_sensor_id in self.sensor_widgets:
+            self.sensor_widgets[self.selected_sensor_id].set_selected(False)
+        
+        # Select new
+        self.selected_sensor_id = sensor_id
+        if sensor_id and sensor_id in self.sensor_widgets:
+            self.sensor_widgets[sensor_id].set_selected(True)
+        
+        # Notify callback of selection change
+        if self.selection_callback:
+            self.selection_callback(sensor_id)
+    
+    def select_sensor_external(self, sensor_id: str):
+        """Select a sensor from external source (no callback)."""
         # Deselect previous
         if self.selected_sensor_id and self.selected_sensor_id in self.sensor_widgets:
             self.sensor_widgets[self.selected_sensor_id].set_selected(False)
@@ -588,8 +616,21 @@ class HomeView:
         if sensor_id and sensor_id in self.sensor_widgets:
             self.sensor_widgets[sensor_id].set_selected(True)
     
+    def set_selection_callback(self, callback):
+        """Set callback function for selection changes."""
+        self.selection_callback = callback
+    
     def on_canvas_click(self, event):
         """Handle canvas click (deselect sensors)."""
+        if (event):
+            x = self.canvas.canvasx(event.x)
+            y = self.canvas.canvasy(event.y)
+            for sensor in self.sensor_widgets.values():
+                if sensor.contains(x, y):
+                    self.select_sensor(sensor.sensor.sensor_id)
+                    return
+            
+        # Click wasn't on any sensors; deselect any previous selection
         self.select_sensor("")
     
     def on_canvas_right_click(self, event):
@@ -615,7 +656,7 @@ class HomeView:
         canvas_y = self.canvas.canvasy(event.y)
         
         # Update the label to show coordinates
-        self.coord_label.config(text=f"Home Layout - : ({canvas_x:.0f}, {canvas_y:.0f})")
+        self.coord_label.config(text=f"Home Layout ({canvas_x:.0f}, {canvas_y:.0f})")
     
     def on_mouse_leave(self, event):
         """Handle mouse leaving canvas - reset label."""
@@ -746,7 +787,9 @@ class HomeView:
         # Add template sensors
         for sensor_data in template_data.get('sensors', []):
             # This would create sensor instances from template
-            pass
+            sensor = self.sim_engine.create_sensor(sensor_data)
+            if sensor:
+                self.add_sensor(sensor)
     
     def refresh(self):
         """Refresh the view with current simulation state."""
