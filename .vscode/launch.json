@@ -1,0 +1,77 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Smart Home App",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_home_sim/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": []
+        },
+        {
+            "name": "Debug Smart Home App (Verbose)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_home_sim/main.py",
+            "console": "integratedTerminal", 
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "args": ["--verbose"]
+        },
+        {
+            "name": "Debug Direct Image Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_home_sim/direct_image_test.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": []
+        },
+        {
+            "name": "Debug Ultra Simple Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_home_sim/ultra_simple_test.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": []
+        },
+        {
+            "name": "Debug Template Loading",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_home_sim/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "args": [],
+            "stopOnEntry": false,
+            "logToFile": true
+        }
+    ]
+}

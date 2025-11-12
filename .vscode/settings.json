@@ -1,0 +1,24 @@
+{
+    "python.defaultInterpreterPath": "python",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.formatting.provider": "black",
+    "python.testing.unittestEnabled": true,
+    "python.testing.pytestEnabled": false,
+    "debug.console.fontSize": 12,
+    "debug.console.fontFamily": "Consolas, 'Courier New', monospace",
+    "debug.inlineValues": "on",
+    "debug.showBreakpointsInOverviewRuler": true,
+    "files.associations": {
+        "*.py": "python"
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/logs/*.log": false
+    }
+}

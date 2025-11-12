@@ -311,6 +311,7 @@ class SmartHomeMainWindow:
         if template:
             self.current_template = template
             self.sim_engine.load_template(template)
+            self.home_view.home_template = self.current_template
             self.refresh_all_panels()
     
     def add_sensor_dialog(self):

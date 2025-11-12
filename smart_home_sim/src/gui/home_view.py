@@ -20,7 +20,7 @@ from src.sensors.base_sensor import BaseSensor
 class SensorWidget:
     """Visual representation of a sensor in the home view."""
     
-    def __init__(self, canvas: tk.Canvas, sensor: BaseSensor, x: int, y: int):
+    def __init__(self, canvas: tk.Canvas, sensor: BaseSensor, x: int, y: int, home_view=None):
         self.canvas = canvas
         self.sensor = sensor
         self.x = x
@@ -30,6 +30,7 @@ class SensorWidget:
         self.dragging = False
         self.drag_start_x = 0
         self.drag_start_y = 0
+        self.home_view = home_view
         
         self.create_visual()
         self.bind_events()
@@ -102,7 +103,8 @@ class SensorWidget:
         self.dragging = False
         
         # Select this sensor
-        self.canvas.master.select_sensor(self.sensor.sensor_id)
+        if self.home_view:
+            self.home_view.select_sensor(self.sensor.sensor_id)
     
     def on_drag(self, event):
         """Handle mouse drag on sensor."""
@@ -129,16 +131,29 @@ class SensorWidget:
         """Handle mouse release."""
         if self.dragging:
             # Update sensor location
-            self.sensor.set_location(self.x, self.y)
+            if hasattr(self.sensor, 'set_location'):
+                self.sensor.set_location(self.x, self.y)
+                print(f"📍 Sensor {self.sensor.name} moved to ({self.x}, {self.y})")
+            elif hasattr(self.sensor, 'location'):
+                # Fallback: directly update location tuple
+                self.sensor.location = (self.x, self.y)
+                print(f"📍 Sensor {self.sensor.name} location updated to ({self.x}, {self.y})")
+            
+            # Log the location update
+            if self.home_view and hasattr(self.home_view, 'logger'):
+                self.home_view.logger.info(f"Sensor {self.sensor.name} moved to position ({self.x}, {self.y})")
+                
             self.dragging = False
     
     def on_right_click(self, event):
         """Handle right-click context menu."""
-        self.canvas.master.show_sensor_context_menu(event, self.sensor)
+        if self.home_view:
+            self.home_view.show_sensor_context_menu(event, self.sensor)
     
     def on_double_click(self, event):
         """Handle double-click to configure sensor."""
-        self.canvas.master.configure_sensor(self.sensor)
+        if self.home_view:
+            self.home_view.configure_sensor(self.sensor)
     
     def move_to(self, x: int, y: int):
         """Move sensor widget to new position."""
@@ -231,7 +246,9 @@ class HomeView:
         header = ttk.Frame(self.frame)
         header.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(header, text="Home Layout", font=('Arial', 12, 'bold')).pack(side=tk.LEFT)
+        # Create coordinate display label
+        self.coord_label = ttk.Label(header, text="Home Layout", font=('Arial', 12, 'bold'))
+        self.coord_label.pack(side=tk.LEFT)
         
         # View controls
         controls = ttk.Frame(header)
@@ -247,37 +264,20 @@ class HomeView:
                        variable=self.show_background, 
                        command=self.toggle_background).pack(side=tk.LEFT, padx=2)
         
-        # Canvas with scrollbars
-        canvas_frame = ttk.Frame(self.frame)
-        canvas_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Create canvas
+        # Canvas without scrollbars - fills the area and resizes with window
         self.canvas = tk.Canvas(
-            canvas_frame, 
-            bg='white', 
-            width=800, 
-            height=600,
-            scrollregion=(0, 0, 1200, 900)
+            self.frame, 
+            bg='white'
         )
-        
-        # Scrollbars
-        v_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        h_scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        
-        self.canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
-        
-        # Grid layout
-        self.canvas.grid(row=0, column=0, sticky="nsew")
-        v_scrollbar.grid(row=0, column=1, sticky="ns")
-        h_scrollbar.grid(row=1, column=0, sticky="ew")
-        
-        canvas_frame.grid_rowconfigure(0, weight=1)
-        canvas_frame.grid_columnconfigure(0, weight=1)
+        self.canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Bind canvas events
         self.canvas.bind('<Button-1>', self.on_canvas_click)
         self.canvas.bind('<Button-3>', self.on_canvas_right_click)
         self.canvas.bind('<MouseWheel>', self.on_mouse_wheel)
+        self.canvas.bind('<Configure>', self.on_canvas_resize)
+        self.canvas.bind('<Motion>', self.on_mouse_motion)
+        self.canvas.bind('<Leave>', self.on_mouse_leave)
         
         # Initialize zoom
         self.zoom_factor = 1.0
@@ -309,47 +309,16 @@ class HomeView:
         
         if self.home_template:
             self.draw_template_layout()
-        else:
-            self.draw_default_layout()
-    
-    def draw_default_layout(self):
-        """Draw a simple default home layout."""
-        # Outer walls
-        self.canvas.create_rectangle(50, 50, 750, 550, outline='black', width=3, tags='layout')
-        
-        # Interior walls
-        # Living room separator
-        self.canvas.create_line(300, 50, 300, 250, fill='black', width=2, tags='layout')
-        # Kitchen separator  
-        self.canvas.create_line(300, 350, 750, 350, fill='black', width=2, tags='layout')
-        # Bedroom separator
-        self.canvas.create_line(500, 250, 500, 350, fill='black', width=2, tags='layout')
-        
-        # Doors (gaps in walls)
-        # Main entrance
-        self.canvas.create_rectangle(375, 47, 425, 53, fill='white', outline='white', tags='layout')
-        # Interior doors
-        self.canvas.create_rectangle(297, 275, 303, 325, fill='white', outline='white', tags='layout')
-        self.canvas.create_rectangle(475, 347, 525, 353, fill='white', outline='white', tags='layout')
-        
-        # Room labels
-        self.canvas.create_text(175, 150, text="Living Room", font=('Arial', 14), tags='layout')
-        self.canvas.create_text(625, 150, text="Bedroom", font=('Arial', 14), tags='layout')
-        self.canvas.create_text(400, 450, text="Kitchen", font=('Arial', 14), tags='layout')
-        self.canvas.create_text(625, 300, text="Bathroom", font=('Arial', 10), tags='layout')
-        
-        # Furniture outlines (optional)
-        # Sofa in living room
-        self.canvas.create_rectangle(70, 200, 170, 230, outline='gray', fill='lightgray', tags='layout')
-        # Bed in bedroom
-        self.canvas.create_rectangle(520, 70, 620, 150, outline='gray', fill='lightgray', tags='layout')
-        # Kitchen counter
-        self.canvas.create_rectangle(320, 370, 720, 400, outline='gray', fill='lightgray', tags='layout')
     
     def draw_template_layout(self):
         """Draw layout from selected template."""
         template = self.home_template
-        
+
+        # Check if template is a dictionary; if not log an error
+        if (template == None):
+            self.logger.error("Failed to draw template because it's value is None.")
+            return  # Stop drawing if template is invalid
+
         # Draw background image if available
         image_loaded = self.draw_background_image()
         
@@ -397,6 +366,7 @@ class HomeView:
     
     def draw_background_image(self):
         """Draw background image from template if available. Returns True if image loaded successfully."""
+        print("🖼️ Loading background image...")
         if not PIL_AVAILABLE:
             self.logger.warning("PIL not available for image loading")
             return False
@@ -415,8 +385,6 @@ class HomeView:
         try:
             # Construct full path
             if not os.path.isabs(image_path):
-                # Get project root (go up from src/gui/home_view.py to project root)
-                # Current file is in src/gui/, so we need to go up 2 levels to get to project root
                 current_dir = os.path.dirname(os.path.abspath(__file__))  # src/gui/
                 gui_dir = os.path.dirname(current_dir)  # src/
                 project_root = os.path.dirname(gui_dir)  # project root
@@ -430,50 +398,20 @@ class HomeView:
                 self.logger.error(f"Image file not found: {full_image_path}")
                 return False
                 
-            # Load and resize image to fit canvas
-            image = Image.open(full_image_path)
-            self.logger.info(f"Image opened successfully - size: {image.size}")
+            # Load image and store original for resizing
+            self.background_image = Image.open(full_image_path)
+            print(f"✅ Image loaded: {self.background_image.size}")
+            self.logger.info(f"Image opened successfully - size: {self.background_image.size}")
             
-            # Get canvas size (use scrollregion if set)
-            canvas_width = 800  # Default canvas width
-            canvas_height = 600  # Default canvas height
+            # Create and position the image based on current canvas size
+            self.update_background_image_size()
             
-            # Resize image to fit canvas while maintaining aspect ratio
-            image.thumbnail((canvas_width, canvas_height), Image.Resampling.LANCZOS)
-            self.logger.info(f"Image resized to: {image.size}")
-            
-            # Convert to PhotoImage
-            self.background_photo = ImageTk.PhotoImage(image)
-            
-            # Remove existing background image
-            if self.background_image_id:
-                self.canvas.delete(self.background_image_id)
-            
-            # Add to canvas (center the image in the visible area)
-            self.background_image_id = self.canvas.create_image(
-                400, 300, anchor=tk.CENTER, image=self.background_photo, tags='background'
-            )
-            
-            # Ensure background image is behind other elements but visible
-            self.canvas.tag_lower('background')
-            
-            # Force visibility - make sure it's not hidden
-            self.canvas.itemconfig(self.background_image_id, state='normal')
-            
-            # Update canvas scroll region to include the image
-            bbox = self.canvas.bbox(self.background_image_id)
-            if bbox:
-                x1, y1, x2, y2 = bbox
-                self.canvas.configure(scrollregion=(x1-50, y1-50, x2+50, y2+50))
-            
-            # Apply visibility setting only after ensuring it's properly positioned
-            if hasattr(self, 'show_background') and not self.show_background.get():
-                self.canvas.itemconfig(self.background_image_id, state='hidden')
-            
+            print(f"✅ Background image ready!")
             self.logger.info(f"✓ Background image loaded successfully: {os.path.basename(full_image_path)}")
             return True
                 
         except Exception as e:
+            print(f"❌ Error loading image: {e}")
             self.logger.error(f"Error loading background image {image_path}: {e}")
             import traceback
             self.logger.error(f"Stack trace: {traceback.format_exc()}")
@@ -513,22 +451,114 @@ class HomeView:
             self.logger.error(f"Error loading background image: {e}")
             return False
     
+    def update_background_image_size(self):
+        """Update background image size to fit current canvas size."""
+        if not self.background_image:
+            return
+            
+        # Get current canvas size
+        self.canvas.update_idletasks()  # Ensure canvas is properly sized
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        
+        # Use minimum size if canvas not yet properly sized
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width = 800
+            canvas_height = 600
+            
+        print(f"📐 Canvas size: {canvas_width}x{canvas_height}")
+        
+        # Create a copy and resize to fit within canvas while maintaining aspect ratio
+        image_copy = self.background_image.copy()
+        
+        # Calculate scale to fit the image within the canvas bounds (maintain aspect ratio)
+        scale_x = canvas_width / image_copy.size[0]
+        scale_y = canvas_height / image_copy.size[1]
+        scale = min(scale_x, scale_y)  # Use min to fit entire image within bounds
+        
+        new_width = int(image_copy.size[0] * scale)
+        new_height = int(image_copy.size[1] * scale)
+        
+        image_copy = image_copy.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        print(f"📏 Image resized to: {image_copy.size} (scale: {scale:.3f})")
+        
+        # Convert to PhotoImage
+        print("🎨 Converting to PhotoImage...")
+        self.background_photo = ImageTk.PhotoImage(image_copy)
+        print(f"✅ PhotoImage created: {self.background_photo}")
+        
+        # Remove existing background image
+        if self.background_image_id:
+            print(f"🗑️ Removing old background image: {self.background_image_id}")
+            self.canvas.delete(self.background_image_id)
+        
+        # Add to canvas at center
+        center_x = canvas_width // 2
+        center_y = canvas_height // 2
+        print(f"🎯 Creating image on canvas at ({center_x}, {center_y})...")
+        
+        self.background_image_id = self.canvas.create_image(
+            center_x, center_y, anchor=tk.CENTER, image=self.background_photo, tags='background'
+        )
+        print(f"✅ Canvas image created with ID: {self.background_image_id}")
+        
+        # Ensure background image is behind other elements
+        self.canvas.tag_lower('background')
+        print("⬇️ Background moved to back")
+        
+        # Apply visibility setting
+        if hasattr(self, 'show_background') and not self.show_background.get():
+            self.canvas.itemconfig(self.background_image_id, state='hidden')
+            print("🙈 Background image hidden by setting")
+        else:
+            self.canvas.itemconfig(self.background_image_id, state='normal')
+            print("👁️ Background image should be visible")
+            
+        # Force canvas update
+        self.canvas.update_idletasks()
+        print("🔄 Canvas update forced")
+        
+        # Ensure sensors remain on top of the new background image
+        self.ensure_sensors_on_top()
+
+    def on_canvas_resize(self, event):
+        """Handle canvas resize - update background image size."""
+        if self.background_image:
+            print(f"🔄 Canvas resized to: {event.width}x{event.height}")
+            # Use after_idle to avoid multiple rapid calls during resize
+            self.canvas.after_idle(self.update_background_image_size)
+    
     def toggle_background(self):
         """Toggle background image visibility."""
+        print(f"🔄 TOGGLE BACKGROUND called - show_background: {self.show_background.get()}")
         if self.background_image_id:
             if self.show_background.get():
+                print("👁️ Setting background to 'normal'")
                 self.canvas.itemconfig(self.background_image_id, state='normal')
             else:
+                print("🙈 Setting background to 'hidden'")
                 self.canvas.itemconfig(self.background_image_id, state='hidden')
+        else:
+            print("❌ No background_image_id found")
     
     def add_sensor(self, sensor: BaseSensor):
         """Add a sensor to the home view."""
         if sensor.sensor_id not in self.sensor_widgets:
             x, y = sensor.location
-            widget = SensorWidget(self.canvas, sensor, x, y)
+            widget = SensorWidget(self.canvas, sensor, x, y, self)
             self.sensor_widgets[sensor.sensor_id] = widget
             
+            # Ensure sensor is drawn above background image
+            self.ensure_sensors_on_top()
+            
             self.logger.info(f"Added sensor {sensor.name} to home view at ({x}, {y})")
+    
+    def ensure_sensors_on_top(self):
+        """Ensure all sensor widgets are drawn above the background image."""
+        # Raise all sensor-related canvas items to the top
+        for widget in self.sensor_widgets.values():
+            for item_id in [widget.circle_id, widget.status_id, widget.label_id, widget.selection_id]:
+                self.canvas.tag_raise(item_id)
     
     def remove_sensor(self, sensor_id: str):
         """Remove a sensor from the home view."""
@@ -560,7 +590,7 @@ class HomeView:
     
     def on_canvas_click(self, event):
         """Handle canvas click (deselect sensors)."""
-        self.select_sensor(None)
+        self.select_sensor("")
     
     def on_canvas_right_click(self, event):
         """Handle canvas right-click."""
@@ -577,6 +607,19 @@ class HomeView:
         """Show context menu for sensor."""
         self.select_sensor(sensor.sensor_id)
         self.sensor_context_menu.post(event.x_root, event.y_root)
+    
+    def on_mouse_motion(self, event):
+        """Handle mouse motion over canvas - update coordinate display."""
+        # Get canvas coordinates (accounting for zoom and scroll)
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        
+        # Update the label to show coordinates
+        self.coord_label.config(text=f"Home Layout - : ({canvas_x:.0f}, {canvas_y:.0f})")
+    
+    def on_mouse_leave(self, event):
+        """Handle mouse leaving canvas - reset label."""
+        self.coord_label.config(text="Home Layout")
     
     def configure_sensor(self, sensor):
         """Open sensor configuration dialog."""
@@ -654,9 +697,9 @@ class HomeView:
                 self.zoom_in()
             else:
                 self.zoom_out()
-        else:
+        # else:
             # Normal scroll
-            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
     
     def load_template(self, template_data):
         """Load a home template."""
