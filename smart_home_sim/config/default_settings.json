@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "application": {
+    "name": "Smart Home Simulation",
+    "update_interval": 1.0,
+    "max_sensors": 100,
+    "max_rules": 50
+  },
+  "simulation": {
+    "default_speed": 1.0,
+    "max_speed": 10.0,
+    "min_speed": 0.1,
+    "auto_save_interval": 300
+  },
+  "gui": {
+    "theme": "default",
+    "auto_refresh": true,
+    "show_tooltips": true,
+    "default_window_size": [1200, 800]
+  },
+  "logging": {
+    "level": "INFO",
+    "max_memory_records": 10000,
+    "file_rotation_days": 7,
+    "categories": [
+      "general",
+      "sensor", 
+      "rule",
+      "security",
+      "simulation"
+    ]
+  },
+  "security": {
+    "default_level": "basic",
+    "require_authentication": true,
+    "encryption_enabled": false,
+    "levels": {
+      "basic": {
+        "description": "Basic security with simple authentication",
+        "features": ["authentication"]
+      },
+      "standard": {
+        "description": "Standard security with encryption",
+        "features": ["authentication", "encryption"]
+      },
+      "high": {
+        "description": "High security with advanced features",
+        "features": ["authentication", "encryption", "access_control"]
+      },
+      "critical": {
+        "description": "Critical security for sensitive environments",
+        "features": ["authentication", "encryption", "access_control", "audit_logging"]
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+2025-11-12 09:28:47 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 09:28:47 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 09:28:47 - INFO - [general] - Simulation engine initialized
+2025-11-12 09:28:58 - INFO - [general] - Loaded template: Custom House
+2025-11-12 09:28:58 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 09:29:14 - INFO - [general] - Added sensor: temperature_sensor (temperature)
+2025-11-12 09:29:14 - INFO - [general] - Added new sensor: temperature_sensor (temperature)
+2025-11-12 10:13:00 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:13:00 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:13:00 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Back Door (door_window)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Kitchen Smoke (smoke)
+2025-11-12 10:13:09 - INFO - [general] - Added sensor: Hallway Smoke (smoke)
+2025-11-12 10:13:09 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:13:09 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:16:40 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:22:26 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:22:26 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:22:26 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:22:35 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:22:35 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:22:35 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:22:35 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:22:36 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:22:36 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:22:36 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:22:36 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:22:36 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:26:48 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:26:48 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:26:48 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:26:55 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:26:55 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:26:55 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:29:43 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:29:43 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:29:43 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:29:50 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:29:50 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:29:50 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:33:57 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:33:57 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:33:57 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:34:05 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:34:05 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:34:05 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:34:42 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:34:42 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:34:42 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:34:48 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:34:48 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:34:48 - INFO - [general] - Application GUI initialized successfully
+2025-11-12 10:35:15 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:35:45 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:35:45 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:35:45 - INFO - [general] - Attempting to load image: resources/images/houses/3bedroom001.jpg
+2025-11-12 10:35:45 - INFO - [general] - Full image path: C:\Users\v-mziadeh\OneDrive\Documents\AI-Master\IoT\Project\smart_home_sim\resources/images/houses/3bedroom001.jpg
+2025-11-12 10:35:45 - INFO - [general] - Image opened successfully - size: (1024, 1024)
+2025-11-12 10:35:45 - INFO - [general] - Image resized to: (600, 600)
+2025-11-12 10:41:16 - INFO - [general] - Smart Home Logger initialized
+2025-11-12 10:41:16 - INFO - [general] - Starting Smart Home Simulation Application
+2025-11-12 10:41:16 - INFO - [general] - Simulation engine initialized
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Living Room Temp (temperature)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Bedroom Temp (temperature)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Living Room Motion (motion)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Hallway Motion (motion)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Front Door (door_window)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Kitchen Smoke Detector (smoke)
+2025-11-12 10:41:22 - INFO - [general] - Added sensor: Living Room Light Sensor (light)
+2025-11-12 10:41:22 - INFO - [general] - Loaded template: Family House
+2025-11-12 10:41:22 - INFO - [general] - Application GUI initialized successfully

@@ -1,0 +1,140 @@
+{
+  "studio_apartment": {
+    "name": "Studio Apartment",
+    "description": "A compact studio apartment with basic sensors",
+    "image": "resources/images/houses/2bedroom001.jpg",
+    "walls": [
+      {"x1": 50, "y1": 50, "x2": 400, "y2": 50, "width": 3},
+      {"x1": 400, "y1": 50, "x2": 400, "y2": 300, "width": 3},
+      {"x1": 400, "y1": 300, "x2": 50, "y2": 300, "width": 3},
+      {"x1": 50, "y1": 300, "x2": 50, "y2": 50, "width": 3},
+      {"x1": 300, "y1": 50, "x2": 300, "y2": 150, "width": 2}
+    ],
+    "rooms": [
+      {
+        "name": "Studio",
+        "bounds": {"x": 50, "y": 50, "width": 250, "height": 250},
+        "label_pos": {"x": 175, "y": 175}
+      },
+      {
+        "name": "Bathroom",
+        "bounds": {"x": 300, "y": 50, "width": 100, "height": 100},
+        "label_pos": {"x": 350, "y": 100}
+      },
+      {
+        "name": "Kitchen",
+        "bounds": {"x": 300, "y": 150, "width": 100, "height": 150},
+        "label_pos": {"x": 350, "y": 225}
+      }
+    ],
+    "furniture": [
+      {
+        "name": "Bed",
+        "bounds": {"x": 70, "y": 200, "width": 80, "height": 60},
+        "color": "lightblue"
+      },
+      {
+        "name": "Sofa",
+        "bounds": {"x": 200, "y": 70, "width": 80, "height": 40},
+        "color": "lightgreen"
+      }
+    ],
+    "sensors": [
+      {
+        "type": "temperature",
+        "name": "Main Temperature",
+        "location": [175, 150],
+        "config": {"base_temp": 22.0}
+      },
+      {
+        "type": "motion", 
+        "name": "Entry Motion",
+        "location": [100, 100],
+        "config": {"trigger_probability": 0.1}
+      },
+      {
+        "type": "door_window",
+        "name": "Main Door",
+        "location": [225, 50],
+        "config": {"sensor_type": "door"}
+      }
+    ]
+  },
+  
+  "family_house": {
+    "name": "Family House",
+    "description": "A typical family house with comprehensive sensor coverage",
+    "image": "resources/images/houses/3bedroom001.jpg",
+    "walls": [
+      {"x1": 50, "y1": 50, "x2": 550, "y2": 50, "width": 3},
+      {"x1": 550, "y1": 50, "x2": 550, "y2": 400, "width": 3},
+      {"x1": 550, "y1": 400, "x2": 50, "y2": 400, "width": 3},
+      {"x1": 50, "y1": 400, "x2": 50, "y2": 50, "width": 3},
+      {"x1": 250, "y1": 50, "x2": 250, "y2": 200, "width": 2},
+      {"x1": 50, "y1": 200, "x2": 350, "y2": 200, "width": 2},
+      {"x1": 350, "y1": 200, "x2": 350, "y2": 300, "width": 2}
+    ],
+    "rooms": [
+      {
+        "name": "Living Room",
+        "bounds": {"x": 50, "y": 50, "width": 200, "height": 150},
+        "label_pos": {"x": 150, "y": 125}
+      },
+      {
+        "name": "Kitchen",
+        "bounds": {"x": 50, "y": 200, "width": 300, "height": 100},
+        "label_pos": {"x": 200, "y": 250}
+      },
+      {
+        "name": "Master Bedroom", 
+        "bounds": {"x": 250, "y": 50, "width": 300, "height": 150},
+        "label_pos": {"x": 400, "y": 125}
+      },
+      {
+        "name": "Bathroom",
+        "bounds": {"x": 350, "y": 200, "width": 200, "height": 100},
+        "label_pos": {"x": 450, "y": 250}
+      }
+    ],
+    "sensors": [
+      {
+        "type": "temperature",
+        "name": "Living Room Temp",
+        "location": [150, 125],
+        "config": {"base_temp": 21.0}
+      },
+      {
+        "type": "temperature", 
+        "name": "Bedroom Temp",
+        "location": [400, 125],
+        "config": {"base_temp": 20.0}
+      },
+      {
+        "type": "motion",
+        "name": "Living Room Motion",
+        "location": [150, 150]
+      },
+      {
+        "type": "motion",
+        "name": "Hallway Motion",
+        "location": [300, 250]
+      },
+      {
+        "type": "door_window",
+        "name": "Front Door",
+        "location": [150, 50],
+        "config": {"sensor_type": "door"}
+      },
+      {
+        "type": "smoke",
+        "name": "Kitchen Smoke Detector",
+        "location": [200, 240]
+      },
+      {
+        "type": "light",
+        "name": "Living Room Light Sensor", 
+        "location": [180, 100]
+      }
+    ]
+  }
+}
