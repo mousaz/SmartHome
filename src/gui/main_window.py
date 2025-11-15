@@ -8,6 +8,7 @@ import os
 from typing import Optional
 
 from src.gui.home_view import HomeView
+from src.gui.system_view import SystemView
 from src.gui.sensor_panel import SensorPanel
 from src.gui.rules_panel import RulesPanel
 from src.gui.log_viewer import LogViewer
@@ -160,10 +161,26 @@ class SmartHomeMainWindow:
         ttk.Button(actions_frame, text="Security", command=self.show_security_panel).pack(side=tk.LEFT, padx=2)
     
     def setup_layout(self):
-        """Setup main layout with panels."""
-        # Left panel - Home view (main area)
-        self.home_view = HomeView(self.main_paned, self.sim_engine, self.logger)
-        self.main_paned.add(self.home_view.frame, weight=3)
+        """Setup main layout with tabbed interface."""
+        # Create main notebook for tabbed interface
+        self.main_notebook = ttk.Notebook(self.main_paned)
+        self.main_paned.add(self.main_notebook, weight=3)
+        
+        # Home View Tab
+        self.home_tab_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(self.home_tab_frame, text="Home View")
+        
+        # Create home view in its tab
+        self.home_view = HomeView(self.home_tab_frame, self.sim_engine, self.logger)
+        self.home_view.frame.pack(fill=tk.BOTH, expand=True)
+        
+        # System View Tab
+        self.system_tab_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(self.system_tab_frame, text="System View")
+        
+        # Create system view in its tab
+        self.system_view = SystemView(self.system_tab_frame, self.sim_engine, self.logger)
+        self.system_view.frame.pack(fill=tk.BOTH, expand=True)
         
         # Right panels
         self.main_paned.add(self.right_paned, weight=1)
@@ -354,6 +371,7 @@ class SmartHomeMainWindow:
         self.update_status_bar()
         # Forward to relevant panels
         self.home_view.on_simulation_event(event)
+        self.system_view.refresh()  # Refresh system view on simulation events
         self.sensor_panel.on_simulation_event(event)
         self.rules_panel.on_simulation_event(event)
     
@@ -377,6 +395,7 @@ class SmartHomeMainWindow:
     def refresh_all_panels(self):
         """Refresh all panels with current data."""
         self.home_view.refresh()
+        self.system_view.refresh()
         self.sensor_panel.refresh()
         self.rules_panel.refresh()
         self.update_status_bar()
