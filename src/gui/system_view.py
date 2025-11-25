@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from typing import Dict, List, Optional, Set, Tuple
 import json
+import datetime
 
 from src.sensors.base_sensor import BaseSensor
 from src.system.components import (
@@ -114,10 +115,11 @@ class Connection:
 class SystemView:
     """System view for managing sensor connections and data flow."""
     
-    def __init__(self, parent, simulation_engine, logger):
+    def __init__(self, parent, simulation_engine, logger, on_component_selected=None):
         self.parent = parent
         self.sim_engine = simulation_engine
         self.logger = logger
+        self.on_component_selected = on_component_selected  # Callback for component selection
         
         self.connections = {}  # connection_id -> Connection
         self.controllers = {}  # controller_id -> Controller
@@ -212,7 +214,7 @@ class SystemView:
         canvas_frame = ttk.Frame(self.diagram_frame)
         canvas_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.canvas = tk.Canvas(canvas_frame, bg='white', width=800, height=600)
+        self.canvas = tk.Canvas(canvas_frame, bg='white')
         
         # Scrollbars
         v_scroll = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
@@ -234,6 +236,7 @@ class SystemView:
         self.canvas.bind('<Button-3>', self.on_canvas_right_click)
         self.canvas.bind('<B1-Motion>', self.on_canvas_drag)
         self.canvas.bind('<ButtonRelease-1>', self.on_canvas_release)
+        self.canvas.bind('<Configure>', self.on_canvas_resize)
         
         # Context menu
         self.canvas_context_menu = tk.Menu(self.frame, tearoff=0)
@@ -476,6 +479,7 @@ class SystemView:
         # Bind events
         for item_id in [rect_id, label_id]:
             self.canvas.tag_bind(item_id, '<Button-1>', lambda e, sid=sensor.sensor_id: self.select_component(sid))
+            self.canvas.tag_bind(item_id, '<Button-3>', lambda e, sid=sensor.sensor_id: self.show_sensor_context_menu(e, sid))
     
     def draw_controller(self, controller: Controller, x: int, y: int):
         """Draw a controller on the canvas."""
@@ -508,6 +512,7 @@ class SystemView:
         # Bind events
         for item_id in [shape_id, label_id]:
             self.canvas.tag_bind(item_id, '<Button-1>', lambda e, cid=controller.controller_id: self.select_component(cid))
+            self.canvas.tag_bind(item_id, '<Button-3>', lambda e, cid=controller.controller_id: self.show_controller_context_menu(e, cid))
     
     def draw_connections(self):
         """Draw connections between components."""
@@ -664,6 +669,517 @@ class SystemView:
         
         context_menu.post(event.x_root, event.y_root)
     
+    def show_sensor_context_menu(self, event, sensor_id: str):
+        """Show context menu for sensor."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if not sensor:
+            return
+            
+        # Create context menu
+        context_menu = tk.Menu(self.frame, tearoff=0)
+        
+        # Sensor actions
+        context_menu.add_command(label="Toggle Active", command=lambda: self.toggle_sensor(sensor_id))
+        context_menu.add_command(label="View Data", command=lambda: self.view_sensor_data(sensor_id))
+        context_menu.add_separator()
+        
+        # Connection configuration submenu
+        connection_menu = tk.Menu(context_menu, tearoff=0)
+        connection_menu.add_command(label="Add Controller Connection", 
+                                   command=lambda: self.configure_sensor_controller_connection(sensor_id))
+        connection_menu.add_command(label="View Connections", 
+                                   command=lambda: self.view_sensor_connections(sensor_id))
+        connection_menu.add_command(label="Remove Connection", 
+                                   command=lambda: self.remove_sensor_connection(sensor_id))
+        context_menu.add_cascade(label="Controller Connections", menu=connection_menu)
+        
+        context_menu.add_separator()
+        context_menu.add_command(label="Configure Sensor", command=lambda: self.configure_sensor(sensor_id))
+        context_menu.add_command(label="Network Settings", command=lambda: self.configure_sensor_network(sensor_id))
+        context_menu.add_command(label="Remove", command=lambda: self.remove_sensor(sensor_id))
+        
+        context_menu.post(event.x_root, event.y_root)
+    
+    def toggle_sensor(self, sensor_id: str):
+        """Toggle sensor active state."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if sensor:
+            sensor.is_active = not sensor.is_active
+            self.refresh_diagram()
+            self.logger.info(f"Sensor {sensor.name} {'activated' if sensor.is_active else 'deactivated'}")
+    
+    def view_sensor_data(self, sensor_id: str):
+        """View sensor data in a dialog."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if sensor:
+            try:
+                data = sensor.read_data()
+                messagebox.showinfo(f"Sensor Data - {sensor.name}", 
+                                  f"Current reading: {data}\nType: {sensor.get_sensor_type()}\nActive: {sensor.is_active}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to read sensor data: {e}")
+    
+    def configure_sensor(self, sensor_id: str):
+        """Open sensor configuration dialog."""
+        messagebox.showinfo("Configure Sensor", f"Configuration dialog for sensor {sensor_id} (Not yet implemented)")
+    
+    def remove_sensor(self, sensor_id: str):
+        """Remove sensor from simulation."""
+        if messagebox.askyesno("Remove Sensor", f"Are you sure you want to remove sensor {sensor_id}?"):
+            self.sim_engine.remove_sensor(sensor_id)
+            self.refresh_diagram()
+            self.logger.info(f"Sensor {sensor_id} removed")
+    
+    def configure_sensor_controller_connection(self, sensor_id: str):
+        """Configure connection between sensor and controller."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if not sensor:
+            return
+        
+        # Create connection configuration dialog
+        dialog = tk.Toplevel(self.frame)
+        dialog.title(f"Configure Controller Connection - {sensor.name}")
+        dialog.geometry("500x600")
+        dialog.transient(self.frame.winfo_toplevel())
+        dialog.grab_set()
+        
+        # Main frame
+        main_frame = ttk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Controller selection
+        ttk.Label(main_frame, text="Select Controller:").pack(anchor=tk.W)
+        controller_var = tk.StringVar()
+        controller_combo = ttk.Combobox(main_frame, textvariable=controller_var, state="readonly")
+        
+        # Get available controllers (including system components that are controllers)
+        available_controllers = []
+        for comp_id, component in self.component_manager.components.items():
+            if component.component_type.value == "controller":
+                available_controllers.append(f"System Controller: {comp_id}")
+        
+        # Add manual controller entry option
+        available_controllers.append("Custom Controller...")
+        controller_combo['values'] = available_controllers
+        controller_combo.pack(fill=tk.X, pady=5)
+        
+        # Connection details frame
+        connection_frame = ttk.LabelFrame(main_frame, text="Connection Details")
+        connection_frame.pack(fill=tk.X, pady=10)
+        
+        # IP/Domain
+        ttk.Label(connection_frame, text="IP Address/Domain:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        ip_var = tk.StringVar(value="192.168.1.100")
+        ip_entry = ttk.Entry(connection_frame, textvariable=ip_var)
+        ip_entry.grid(row=0, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        # Port
+        ttk.Label(connection_frame, text="Port:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        port_var = tk.StringVar(value="8090")
+        port_entry = ttk.Entry(connection_frame, textvariable=port_var)
+        port_entry.grid(row=1, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        # Protocol
+        ttk.Label(connection_frame, text="Protocol:").grid(row=2, column=0, sticky=tk.W, padx=5, pady=2)
+        protocol_var = tk.StringVar(value="http")
+        protocol_combo = ttk.Combobox(connection_frame, textvariable=protocol_var, 
+                                    values=["http", "https", "mqtt", "tcp", "udp"], state="readonly")
+        protocol_combo.grid(row=2, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        # Connection type
+        ttk.Label(connection_frame, text="Connection Type:").grid(row=3, column=0, sticky=tk.W, padx=5, pady=2)
+        conn_type_var = tk.StringVar(value="wireless")
+        conn_type_combo = ttk.Combobox(connection_frame, textvariable=conn_type_var,
+                                     values=["wireless", "wired", "cellular"], state="readonly")
+        conn_type_combo.grid(row=3, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        connection_frame.grid_columnconfigure(1, weight=1)
+        
+        # Advanced settings frame
+        advanced_frame = ttk.LabelFrame(main_frame, text="Advanced Settings")
+        advanced_frame.pack(fill=tk.X, pady=10)
+        
+        # Polling interval
+        ttk.Label(advanced_frame, text="Polling Interval (seconds):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        interval_var = tk.StringVar(value="30")
+        interval_entry = ttk.Entry(advanced_frame, textvariable=interval_var)
+        interval_entry.grid(row=0, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        # Authentication
+        auth_var = tk.BooleanVar()
+        auth_check = ttk.Checkbutton(advanced_frame, text="Require Authentication", variable=auth_var)
+        auth_check.grid(row=1, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
+        
+        # Encryption
+        encrypt_var = tk.BooleanVar()
+        encrypt_check = ttk.Checkbutton(advanced_frame, text="Enable Encryption", variable=encrypt_var)
+        encrypt_check.grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
+        
+        advanced_frame.grid_columnconfigure(1, weight=1)
+        
+        # Buttons frame
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        def save_connection():
+            try:
+                # Validate inputs
+                ip_address = ip_var.get().strip()
+                port = int(port_var.get().strip())
+                protocol = protocol_var.get()
+                
+                if not ip_address:
+                    messagebox.showerror("Error", "IP Address/Domain is required")
+                    return
+                
+                if not (1 <= port <= 65535):
+                    messagebox.showerror("Error", "Port must be between 1 and 65535")
+                    return
+                
+                # Create connection configuration
+                connection_config = {
+                    'controller_id': controller_var.get(),
+                    'ip_address': ip_address,
+                    'port': port,
+                    'protocol': protocol,
+                    'connection_type': conn_type_var.get(),
+                    'polling_interval': int(interval_var.get()),
+                    'auth_required': auth_var.get(),
+                    'encryption_enabled': encrypt_var.get(),
+                    'created_at': datetime.datetime.now().isoformat()
+                }
+                
+                # Add connection to sensor (assuming BaseThing interface)
+                if hasattr(sensor, 'add_controller_connection'):
+                    sensor.add_controller_connection(
+                        controller_id=controller_var.get(),
+                        ip_address=ip_address,
+                        port=port
+                    )
+                
+                # Store in sensor config for persistence
+                if 'controller_connections' not in sensor.config:
+                    sensor.config['controller_connections'] = []
+                sensor.config['controller_connections'].append(connection_config)
+                
+                # Refresh the diagram to show new connections
+                self.refresh_diagram()
+                
+                self.logger.info(f"Controller connection configured for sensor {sensor.name}")
+                messagebox.showinfo("Success", "Controller connection configured successfully!")
+                dialog.destroy()
+                
+            except ValueError as e:
+                messagebox.showerror("Error", f"Invalid input: {e}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to configure connection: {e}")
+        
+        def test_connection():
+            try:
+                ip_address = ip_var.get().strip()
+                port = int(port_var.get().strip())
+                protocol = protocol_var.get()
+                
+                # Simple connection test (simulation)
+                import socket
+                import time
+                
+                if protocol in ["http", "https"]:
+                    # Test HTTP connection
+                    try:
+                        import urllib.request
+                        import urllib.error
+                        url = f"{protocol}://{ip_address}:{port}/health"
+                        req = urllib.request.Request(url, method='GET')
+                        
+                        with urllib.request.urlopen(req, timeout=5) as response:
+                            if response.status == 200:
+                                messagebox.showinfo("Success", "Connection test successful!")
+                            else:
+                                messagebox.showwarning("Warning", f"Connection returned status: {response.status}")
+                    except urllib.error.URLError:
+                        messagebox.showinfo("Info", "Connection test completed (simulated)")
+                else:
+                    # Test TCP/UDP socket connection
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocol == "tcp" else socket.SOCK_DGRAM)
+                    sock.settimeout(5)
+                    result = sock.connect_ex((ip_address, port))
+                    sock.close()
+                    
+                    if result == 0:
+                        messagebox.showinfo("Success", "Connection test successful!")
+                    else:
+                        messagebox.showinfo("Info", "Connection test completed (simulated)")
+                        
+            except Exception as e:
+                messagebox.showinfo("Info", f"Connection test completed (simulated): {e}")
+        
+        ttk.Button(button_frame, text="Test Connection", command=test_connection).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Save", command=save_connection).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+        
+        # Set initial focus
+        controller_combo.focus()
+    
+    def view_sensor_connections(self, sensor_id: str):
+        """View existing connections for a sensor."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if not sensor:
+            return
+        
+        connections = sensor.config.get('controller_connections', [])
+        if hasattr(sensor, 'get_controller_connections'):
+            connections.extend(sensor.get_controller_connections())
+        
+        if not connections:
+            messagebox.showinfo("No Connections", f"Sensor {sensor.name} has no controller connections configured.")
+            return
+        
+        # Create connections view dialog
+        dialog = tk.Toplevel(self.frame)
+        dialog.title(f"Controller Connections - {sensor.name}")
+        dialog.geometry("600x400")
+        dialog.transient(self.frame.winfo_toplevel())
+        dialog.grab_set()
+        
+        # Create treeview
+        tree_frame = ttk.Frame(dialog)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        columns = ("Controller", "Endpoint", "Protocol", "Type", "Status")
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=120)
+        
+        # Populate connections
+        for conn in connections:
+            endpoint = conn.get('endpoint', f"{conn.get('ip_address', 'unknown')}:{conn.get('port', 'unknown')}")
+            status = conn.get('status', 'configured')
+            tree.insert("", tk.END, values=(
+                conn.get('controller_id', 'Unknown'),
+                endpoint,
+                conn.get('protocol', 'http'),
+                conn.get('connection_type', 'wireless'),
+                status
+            ))
+        
+        tree.pack(fill=tk.BOTH, expand=True)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Close button
+        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
+    
+    def remove_sensor_connection(self, sensor_id: str):
+        """Remove a controller connection from sensor."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if not sensor:
+            return
+        
+        connections = sensor.config.get('controller_connections', [])
+        if not connections:
+            messagebox.showinfo("No Connections", "No connections to remove.")
+            return
+        
+        # Create selection dialog
+        dialog = tk.Toplevel(self.frame)
+        dialog.title("Remove Connection")
+        dialog.geometry("400x300")
+        dialog.transient(self.frame.winfo_toplevel())
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text="Select connection to remove:").pack(pady=10)
+        
+        # Listbox for connections
+        listbox = tk.Listbox(dialog)
+        listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        for i, conn in enumerate(connections):
+            controller_id = conn.get('controller_id', 'Unknown')
+            endpoint = conn.get('endpoint', f"{conn.get('ip_address', 'unknown')}:{conn.get('port', 'unknown')}")
+            listbox.insert(tk.END, f"{controller_id} - {endpoint}")
+        
+        def remove_selected():
+            selection = listbox.curselection()
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select a connection to remove.")
+                return
+            
+            if messagebox.askyesno("Confirm Remove", "Are you sure you want to remove this connection?"):
+                index = selection[0]
+                removed_conn = connections.pop(index)
+                
+                # Also remove from Thing's controller connections if available
+                if hasattr(sensor, 'remove_controller_connection'):
+                    sensor.remove_controller_connection(removed_conn.get('controller_id', ''))
+                
+                self.refresh_diagram()
+                self.logger.info(f"Removed controller connection from sensor {sensor.name}")
+                messagebox.showinfo("Success", "Connection removed successfully!")
+                dialog.destroy()
+        
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill=tk.X, pady=10)
+        ttk.Button(button_frame, text="Remove", command=remove_selected).pack(side=tk.LEFT, padx=10)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=10)
+    
+    def configure_sensor_network(self, sensor_id: str):
+        """Configure sensor network settings."""
+        sensor = self.sim_engine.get_sensor(sensor_id)
+        if not sensor:
+            return
+        
+        # Create network configuration dialog
+        dialog = tk.Toplevel(self.frame)
+        dialog.title(f"Network Settings - {sensor.name}")
+        dialog.geometry("400x500")
+        dialog.transient(self.frame.winfo_toplevel())
+        dialog.grab_set()
+        
+        main_frame = ttk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Network interface settings
+        net_frame = ttk.LabelFrame(main_frame, text="Network Interface")
+        net_frame.pack(fill=tk.X, pady=5)
+        
+        # Get existing network config or set defaults
+        network_config = sensor.config.get('network', {})
+        
+        ttk.Label(net_frame, text="Interface Type:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        interface_var = tk.StringVar(value=network_config.get('interface_type', 'wifi'))
+        interface_combo = ttk.Combobox(net_frame, textvariable=interface_var,
+                                     values=["wifi", "ethernet", "cellular", "zigbee", "bluetooth"], 
+                                     state="readonly")
+        interface_combo.grid(row=0, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        ttk.Label(net_frame, text="IP Address:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        ip_var = tk.StringVar(value=network_config.get('ip_address', 'DHCP'))
+        ip_entry = ttk.Entry(net_frame, textvariable=ip_var)
+        ip_entry.grid(row=1, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        ttk.Label(net_frame, text="MAC Address:").grid(row=2, column=0, sticky=tk.W, padx=5, pady=2)
+        mac_var = tk.StringVar(value=network_config.get('mac_address', 'Auto'))
+        mac_entry = ttk.Entry(net_frame, textvariable=mac_var)
+        mac_entry.grid(row=2, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        net_frame.grid_columnconfigure(1, weight=1)
+        
+        # WiFi settings (shown when WiFi is selected)
+        wifi_frame = ttk.LabelFrame(main_frame, text="WiFi Settings")
+        wifi_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(wifi_frame, text="SSID:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        ssid_var = tk.StringVar(value=network_config.get('wifi_ssid', 'SmartHome_Network'))
+        ssid_entry = ttk.Entry(wifi_frame, textvariable=ssid_var)
+        ssid_entry.grid(row=0, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        ttk.Label(wifi_frame, text="Security:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        security_var = tk.StringVar(value=network_config.get('wifi_security', 'WPA2'))
+        security_combo = ttk.Combobox(wifi_frame, textvariable=security_var,
+                                    values=["WPA2", "WPA3", "WEP", "Open"], state="readonly")
+        security_combo.grid(row=1, column=1, sticky=tk.W+tk.E, padx=5, pady=2)
+        
+        wifi_frame.grid_columnconfigure(1, weight=1)
+        
+        # Power and performance settings
+        power_frame = ttk.LabelFrame(main_frame, text="Power & Performance")
+        power_frame.pack(fill=tk.X, pady=5)
+        
+        # Power saving mode
+        power_save_var = tk.BooleanVar(value=network_config.get('power_save_mode', False))
+        ttk.Checkbutton(power_frame, text="Enable Power Save Mode", 
+                       variable=power_save_var).pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Sleep interval
+        ttk.Label(power_frame, text="Sleep Interval (minutes):").pack(anchor=tk.W, padx=5)
+        sleep_var = tk.StringVar(value=str(network_config.get('sleep_interval', 60)))
+        sleep_entry = ttk.Entry(power_frame, textvariable=sleep_var)
+        sleep_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        def save_network_config():
+            try:
+                new_config = {
+                    'interface_type': interface_var.get(),
+                    'ip_address': ip_var.get(),
+                    'mac_address': mac_var.get(),
+                    'wifi_ssid': ssid_var.get(),
+                    'wifi_security': security_var.get(),
+                    'power_save_mode': power_save_var.get(),
+                    'sleep_interval': int(sleep_var.get())
+                }
+                
+                sensor.config['network'] = new_config
+                
+                # Update Thing connection info if applicable
+                if hasattr(sensor, 'set_connection_info'):
+                    from ..iot.base_thing import ConnectionInfo, ConnectionType
+                    conn_info = ConnectionInfo(
+                        connection_type=ConnectionType.WIFI if interface_var.get() == 'wifi' else ConnectionType.ETHERNET,
+                        ip_address=ip_var.get() if ip_var.get() != 'DHCP' else None
+                    )
+                    sensor.set_connection_info(conn_info)
+                
+                self.logger.info(f"Network settings updated for sensor {sensor.name}")
+                messagebox.showinfo("Success", "Network settings saved successfully!")
+                dialog.destroy()
+                
+            except ValueError as e:
+                messagebox.showerror("Error", f"Invalid sleep interval: {e}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save network settings: {e}")
+        
+        # Buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=10)
+        ttk.Button(button_frame, text="Save", command=save_network_config).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+    
+    def show_controller_context_menu(self, event, controller_id: str):
+        """Show context menu for controller."""
+        controller = self.controllers.get(controller_id)
+        if not controller:
+            return
+            
+        # Create context menu
+        context_menu = tk.Menu(self.frame, tearoff=0)
+        
+        # Controller actions
+        context_menu.add_command(label="Configure", command=lambda: self.configure_controller_item(controller_id))
+        context_menu.add_command(label="View Config", command=lambda: self.view_controller_config(controller_id))
+        context_menu.add_separator()
+        context_menu.add_command(label="Remove", command=lambda: self.remove_controller(controller_id))
+        
+        context_menu.post(event.x_root, event.y_root)
+    
+    def configure_controller_item(self, controller_id: str):
+        """Configure a specific controller."""
+        controller = self.controllers.get(controller_id)
+        if controller:
+            # Select the controller for configuration
+            self.selected_component = controller_id
+            self.select_component(controller_id)
+    
+    def view_controller_config(self, controller_id: str):
+        """View controller configuration in a dialog."""
+        controller = self.controllers.get(controller_id)
+        if controller:
+            config_text = json.dumps(controller.config, indent=2)
+            messagebox.showinfo(f"Controller Config - {controller.name}", config_text)
+    
+    def remove_controller(self, controller_id: str):
+        """Remove controller from system."""
+        if messagebox.askyesno("Remove Controller", f"Are you sure you want to remove controller {controller_id}?"):
+            if controller_id in self.controllers:
+                del self.controllers[controller_id]
+                self.refresh_diagram()
+                self.logger.info(f"Controller {controller_id} removed")
+    
     def start_component(self, component_id: str):
         """Start a system component."""
         if component_id in self.component_manager.components:
@@ -795,6 +1311,12 @@ class SystemView:
             
             # Update configuration panel
             self.update_config_panel(component_id, info)
+            
+            # Notify parent about component selection for logs panel
+            if self.on_component_selected:
+                obj = info['object']
+                component_name = f"{info['type'].title()}: {obj.name}"
+                self.on_component_selected(component_id, component_name)
     
     def update_config_panel(self, component_id: str, component_info: dict):
         """Update the configuration panel with selected component details."""
@@ -832,9 +1354,26 @@ class SystemView:
         # Store click position
         self.last_click_pos = (event.x, event.y)
         
-        # Find clicked item
-        item = self.canvas.find_closest(event.x, event.y)[0]
-        tags = self.canvas.gettags(item)
+        # Convert to canvas coordinates if needed (for scrollable canvas)
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        
+        # Find clicked item using canvas coordinates
+        items = self.canvas.find_overlapping(canvas_x-5, canvas_y-5, canvas_x+5, canvas_y+5)
+        
+        # Find the topmost item that's not a connection or selection
+        clicked_item = None
+        for item in reversed(items):  # reversed to get topmost item first
+            tags = self.canvas.gettags(item)
+            # Skip connection lines and selection rectangles
+            if not any(tag.startswith(('connection_', 'selection')) for tag in tags):
+                clicked_item = item
+                break
+        
+        if clicked_item:
+            tags = self.canvas.gettags(clicked_item)
+        else:
+            tags = []
         
         # Check if clicking on a draggable component
         draggable_component_id = None
@@ -846,10 +1385,10 @@ class SystemView:
         
         if draggable_component_id:
             # Set up for potential drag
-            self.drag_item = item
+            self.drag_item = clicked_item
             self.drag_component_id = draggable_component_id
-            self.drag_start_x = event.x
-            self.drag_start_y = event.y
+            self.drag_start_x = canvas_x
+            self.drag_start_y = canvas_y
             
             # Select the component
             self.select_component(draggable_component_id)
@@ -865,24 +1404,36 @@ class SystemView:
     
     def on_canvas_right_click(self, event):
         """Handle canvas right-click."""
-        self.click_x = event.x
-        self.click_y = event.y
+        # Convert to canvas coordinates
+        self.click_x = self.canvas.canvasx(event.x)
+        self.click_y = self.canvas.canvasy(event.y)
         self.canvas_context_menu.post(event.x_root, event.y_root)
     
     def on_canvas_drag(self, event):
         """Handle canvas dragging."""
         if self.drag_item and self.drag_component_id:
+            # Convert to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+            
             # Calculate drag distance
-            dx = event.x - self.drag_start_x
-            dy = event.y - self.drag_start_y
+            dx = canvas_x - self.drag_start_x
+            dy = canvas_y - self.drag_start_y
             
             # Only start drag if moved far enough (prevents accidental drags)
             if abs(dx) > 3 or abs(dy) > 3:
+                # Clear old arrows before moving component
+                self.clear_all_connections()
+                
                 self.move_component(self.drag_component_id, dx, dy)
                 
+                # Redraw all connections with updated positions for real-time feedback
+                self.draw_connections()
+                self.draw_system_connections()
+                
                 # Update drag start position for continuous dragging
-                self.drag_start_x = event.x
-                self.drag_start_y = event.y
+                self.drag_start_x = canvas_x
+                self.drag_start_y = canvas_y
     
     def on_canvas_release(self, event):
         """Handle canvas mouse release."""
@@ -897,6 +1448,15 @@ class SystemView:
         self.drag_item = None
         self.drag_component_id = None
     
+    def on_canvas_resize(self, event):
+        """Handle canvas resize events."""
+        # Update scroll region when canvas is resized
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        
+        # Optional: Log resize for debugging
+        if hasattr(self, 'logger'):
+            self.logger.debug(f"Canvas resized to {event.width}x{event.height}")
+    
     def move_component(self, component_id: str, dx: int, dy: int):
         """Move a component by the specified offset."""
         if component_id in self.canvas_components:
@@ -909,6 +1469,12 @@ class SystemView:
             # Update stored position
             old_x, old_y = component_info['position']
             component_info['position'] = (old_x + dx, old_y + dy)
+            
+            # Move selection rectangle if this component is selected
+            if self.selected_component == component_id:
+                selection_items = self.canvas.find_withtag("selection")
+                for item in selection_items:
+                    self.canvas.move(item, dx, dy)
     
     def update_component_position(self, component_id: str):
         """Update the stored position of a component after dragging."""
@@ -927,6 +1493,64 @@ class SystemView:
         
         # Redraw all connections
         self.draw_system_connections()
+    
+    def clear_connection_arrows(self):
+        """Clear all connection arrows from the canvas."""
+        # Clear existing connection lines by IDs
+        for line_ids in self.connection_lines.values():
+            if isinstance(line_ids, list):
+                for line_id in line_ids:
+                    try:
+                        self.canvas.delete(line_id)
+                    except:
+                        pass  # Item might already be deleted
+            else:
+                try:
+                    self.canvas.delete(line_ids)
+                except:
+                    pass  # Item might already be deleted
+        self.connection_lines.clear()
+        
+        # Also delete any items with connection tags (for extra safety)
+        connection_items = self.canvas.find_withtag("connection_")
+        for item in connection_items:
+            self.canvas.delete(item)
+        
+        # Delete items that start with "connection_" in their tags
+        all_items = self.canvas.find_all()
+        for item in all_items:
+            tags = self.canvas.gettags(item)
+            for tag in tags:
+                if tag.startswith("connection_"):
+                    try:
+                        self.canvas.delete(item)
+                    except:
+                        pass
+                    break
+    
+    def clear_all_connections(self):
+        """Clear all connections from canvas - both user and system connections."""
+        # Clear connection arrows first
+        self.clear_connection_arrows()
+        
+        # Clear any remaining connection-related canvas items by tag pattern
+        # Find all canvas items and check their tags
+        all_items = self.canvas.find_all()
+        items_to_delete = []
+        
+        for item in all_items:
+            tags = self.canvas.gettags(item)
+            for tag in tags:
+                if 'connection' in tag.lower():
+                    items_to_delete.append(item)
+                    break
+        
+        # Delete the identified items
+        for item in items_to_delete:
+            try:
+                self.canvas.delete(item)
+            except:
+                pass  # Item might already be deleted
     
     def draw_system_connections(self):
         """Draw connection arrows between system components."""

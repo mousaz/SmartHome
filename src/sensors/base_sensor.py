@@ -4,11 +4,21 @@ Base sensor class providing the foundation for all sensor implementations.
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, List
 import uuid
 import time
 import json
 from datetime import datetime
+
+# Import IoT base classes
+try:
+    from ..iot.base_thing import BaseThing, ThingType, ThingStatus, ThingEvent
+except ImportError:
+    # Fallback for development/testing
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from iot.base_thing import BaseThing, ThingType, ThingStatus, ThingEvent
 
 
 class SensorStatus(Enum):
@@ -41,19 +51,33 @@ class SensorEvent:
         }
 
 
-class BaseSensor(ABC):
-    """Abstract base class for all sensors."""
+class BaseSensor(BaseThing):
+    """Abstract base class for all sensors, inheriting from BaseThing."""
     
-    def __init__(self, sensor_id: str = None, name: str = "", location: tuple = (0, 0),
-                 config: Dict[str, Any] = None):
-        self.sensor_id = sensor_id or str(uuid.uuid4())
-        self.name = name or f"{self.get_sensor_type()}_{self.sensor_id[:8]}"
-        self.location = location  # (x, y) coordinates
-        self.config = config or {}
-        self.status = SensorStatus.INACTIVE
+    def __init__(self, sensor_id: Optional[str] = None, name: str = "", location: tuple = (0, 0),
+                 config: Optional[Dict[str, Any]] = None):
+        # Sensor-specific attributes (initialize before calling super)
+        self._sensor_status = SensorStatus.INACTIVE
+        
+        # Initialize the base Thing
+        super().__init__(
+            thing_id=sensor_id,
+            name=name or f"{self.get_sensor_type()}_{(sensor_id or str(uuid.uuid4()))[:8]}",
+            thing_type=ThingType.SENSOR,
+            location=location,
+            config=config
+        )
+        
+        # More sensor-specific attributes (maintain backward compatibility)
+        self.sensor_id = self.thing_id  # Alias for backward compatibility
         self.last_reading = None
         self.last_update = None
+        
+        # Keep the original event_callbacks for backward compatibility
+        # but also use the base Thing event system
         self.event_callbacks = []
+        
+        # Security and authentication
         self.security_level = self.config.get('security_level', 'basic')
         self.authenticated = False
         
@@ -61,6 +85,49 @@ class BaseSensor(ABC):
         self.install_date = datetime.now()
         self.battery_level = 100.0  # Percentage
         self.firmware_version = "1.0.0"
+        
+        # Sensor-specific capabilities
+        self.measurement_unit = ""
+        self.measurement_range = (0, 100)
+        self.accuracy = 0.1
+        self.sampling_rate = 1.0  # Hz
+        
+    def get_thing_type(self) -> ThingType:
+        """Return the thing type (sensor)."""
+        return ThingType.SENSOR
+    
+    def get_status(self) -> SensorStatus:
+        """Get sensor status."""
+        return self._sensor_status
+        
+    def set_sensor_status(self, value: SensorStatus):
+        """Set sensor status and sync with thing status."""
+        self._sensor_status = value
+        # Sync with base thing status
+        thing_status_mapping = {
+            SensorStatus.ACTIVE: ThingStatus.ONLINE,
+            SensorStatus.INACTIVE: ThingStatus.OFFLINE,
+            SensorStatus.ERROR: ThingStatus.ERROR,
+            SensorStatus.MAINTENANCE: ThingStatus.MAINTENANCE
+        }
+        new_thing_status = thing_status_mapping.get(value, ThingStatus.OFFLINE)
+        
+        # Update the base thing status directly
+        # Use object.__setattr__ to avoid any property conflicts
+        object.__setattr__(self, 'status', new_thing_status)
+    
+    def get_sensor_status(self) -> SensorStatus:
+        """Get the current sensor status."""
+        return self._sensor_status
+    
+    # For backward compatibility, maintain status property for SensorStatus
+    @property
+    def sensor_status(self) -> SensorStatus:
+        return self._sensor_status
+    
+    @sensor_status.setter 
+    def sensor_status(self, value: SensorStatus):
+        self.set_sensor_status(value)
     
     @abstractmethod
     def get_sensor_type(self) -> str:
@@ -76,6 +143,53 @@ class BaseSensor(ABC):
     def get_default_config(self) -> Dict[str, Any]:
         """Return default configuration for this sensor type."""
         pass
+    
+    # Implement required BaseThing abstract methods
+    def initialize(self) -> bool:
+        """Initialize the sensor."""
+        try:
+            # Perform sensor-specific initialization
+            self.set_status(SensorStatus.INACTIVE)
+            self.last_update = datetime.now()
+            return True
+        except Exception as e:
+            self.handle_error(f"Initialization failed: {e}")
+            return False
+    
+    def start(self) -> bool:
+        """Start the sensor operations."""
+        try:
+            if self.initialize():
+                success = self.activate()
+                if success:
+                    self.uptime_start = datetime.now()
+                return success
+            return False
+        except Exception as e:
+            self.handle_error(f"Start failed: {e}")
+            return False
+    
+    def stop(self) -> bool:
+        """Stop the sensor operations."""
+        try:
+            self.deactivate()
+            return True
+        except Exception as e:
+            self.handle_error(f"Stop failed: {e}")
+            return False
+    
+    def get_capabilities(self) -> List[str]:
+        """Return sensor capabilities."""
+        capabilities = ["reading", "monitoring"]
+        
+        if hasattr(self, 'supports_calibration') and getattr(self, 'supports_calibration', False):
+            capabilities.append("calibration")
+        if hasattr(self, 'supports_threshold_alerts') and getattr(self, 'supports_threshold_alerts', False):
+            capabilities.append("threshold_alerts")
+        if hasattr(self, 'supports_data_logging') and getattr(self, 'supports_data_logging', False):
+            capabilities.append("data_logging")
+            
+        return capabilities
     
     def update_config(self, config: Dict[str, Any]) -> bool:
         """Update sensor configuration."""
@@ -100,14 +214,14 @@ class BaseSensor(ABC):
     def activate(self) -> bool:
         """Activate the sensor."""
         if self.authenticate():
-            self.status = SensorStatus.ACTIVE
+            self.set_sensor_status(SensorStatus.ACTIVE)
             self.emit_event("sensor_activated", {})
             return True
         return False
     
     def deactivate(self):
         """Deactivate the sensor."""
-        self.status = SensorStatus.INACTIVE
+        self.set_sensor_status(SensorStatus.INACTIVE)
         self.emit_event("sensor_deactivated", {})
     
     def authenticate(self) -> bool:
@@ -118,7 +232,7 @@ class BaseSensor(ABC):
     
     def update(self) -> Optional[Dict[str, Any]]:
         """Update sensor and return reading if status changed."""
-        if self.status != SensorStatus.ACTIVE:
+        if self.get_sensor_status() != SensorStatus.ACTIVE:
             return None
         
         try:
@@ -137,7 +251,7 @@ class BaseSensor(ABC):
             return None
             
         except Exception as e:
-            self.status = SensorStatus.ERROR
+            self.set_sensor_status(SensorStatus.ERROR)
             self.emit_event("sensor_error", {"error": str(e)})
             return None
     
@@ -175,7 +289,7 @@ class BaseSensor(ABC):
             'name': self.name,
             'type': self.get_sensor_type(),
             'location': self.location,
-            'status': self.status.value,
+            'status': self.get_sensor_status().value,
             'config': self.config,
             'last_reading': self.last_reading,
             'last_update': self.last_update.isoformat() if self.last_update else None,
@@ -197,12 +311,12 @@ class BaseSensor(ABC):
     
     def simulate_battery_drain(self, drain_rate: float = 0.01):
         """Simulate battery drainage."""
-        if self.status == SensorStatus.ACTIVE:
+        if self.get_sensor_status() == SensorStatus.ACTIVE:
             self.battery_level = max(0, self.battery_level - drain_rate)
             if self.battery_level <= 10:
                 self.emit_event("low_battery", {"battery_level": self.battery_level})
             if self.battery_level <= 0:
-                self.status = SensorStatus.ERROR
+                self.set_sensor_status(SensorStatus.ERROR)
                 self.emit_event("battery_dead", {})
     
     def to_dict(self) -> Dict[str, Any]:

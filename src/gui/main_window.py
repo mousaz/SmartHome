@@ -10,7 +10,7 @@ from typing import Optional
 from src.gui.home_view import HomeView
 from src.gui.system_view import SystemView
 from src.gui.sensor_panel import SensorPanel
-from src.gui.rules_panel import RulesPanel
+from src.gui.logs_panel import LogsPanel
 from src.gui.log_viewer import LogViewer
 from src.gui.security_panel import SecurityPanel
 from src.gui.templates_dialog import TemplatesDialog
@@ -104,7 +104,7 @@ class SmartHomeMainWindow:
         menubar.add_cascade(label="View", menu=view_menu)
         view_menu.add_command(label="Show Log Viewer", command=self.toggle_log_viewer)
         view_menu.add_command(label="Show Sensor Panel", command=self.toggle_sensor_panel)
-        view_menu.add_command(label="Show Rules Panel", command=self.toggle_rules_panel)
+        view_menu.add_command(label="Show Logs Panel", command=self.toggle_logs_panel)
         view_menu.add_command(label="Show Security Panel", command=self.toggle_security_panel)
         view_menu.add_separator()
         view_menu.add_command(label="Full Screen", command=self.toggle_fullscreen, accelerator="F11")
@@ -157,7 +157,7 @@ class SmartHomeMainWindow:
         actions_frame.pack(side=tk.LEFT, padx=5, fill=tk.Y)
         
         ttk.Button(actions_frame, text="+ Sensor", command=self.add_sensor_dialog).pack(side=tk.LEFT, padx=2)
-        ttk.Button(actions_frame, text="Rules", command=self.show_rules_panel).pack(side=tk.LEFT, padx=2)
+        ttk.Button(actions_frame, text="Logs", command=self.show_logs_panel).pack(side=tk.LEFT, padx=2)
         ttk.Button(actions_frame, text="Security", command=self.show_security_panel).pack(side=tk.LEFT, padx=2)
     
     def setup_layout(self):
@@ -179,7 +179,8 @@ class SmartHomeMainWindow:
         self.main_notebook.add(self.system_tab_frame, text="System View")
         
         # Create system view in its tab
-        self.system_view = SystemView(self.system_tab_frame, self.sim_engine, self.logger)
+        self.system_view = SystemView(self.system_tab_frame, self.sim_engine, self.logger, 
+                                     on_component_selected=self.on_component_selected)
         self.system_view.frame.pack(fill=tk.BOTH, expand=True)
         
         # Right panels
@@ -193,9 +194,9 @@ class SmartHomeMainWindow:
         self.home_view.set_selection_callback(self.on_home_view_selection_changed)
         self.sensor_panel.set_selection_callback(self.on_sensor_panel_selection_changed)
         
-        # Rules panel
-        self.rules_panel = RulesPanel(self.right_paned, self.sim_engine, self.logger)
-        self.right_paned.add(self.rules_panel.frame, weight=1)
+        # Logs panel
+        self.logs_panel = LogsPanel(self.right_paned, self.sim_engine, self.logger)
+        self.right_paned.add(self.logs_panel.frame, weight=1)
         
         # Log viewer (initially hidden)
         self.log_viewer = LogViewer(self.right_paned, self.logger)
@@ -224,9 +225,9 @@ class SmartHomeMainWindow:
         # Separator
         ttk.Separator(self.status_bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=5)
         
-        # Active rules
-        self.rules_count_label = ttk.Label(self.status_bar, text="Rules: 0")
-        self.rules_count_label.pack(side=tk.LEFT, padx=5)
+        # Active logs
+        self.logs_count_label = ttk.Label(self.status_bar, text="Logs: 0")
+        self.logs_count_label.pack(side=tk.LEFT, padx=5)
         
         # Right side - simulation time and FPS
         self.sim_time_label = ttk.Label(self.status_bar, text="Time: 00:00:00")
@@ -339,9 +340,9 @@ class SmartHomeMainWindow:
         """Show add sensor dialog."""
         self.sensor_panel.show_add_sensor_dialog()
     
-    def show_rules_panel(self):
-        """Show/focus rules panel."""
-        self.toggle_rules_panel()
+    def show_logs_panel(self):
+        """Show/focus logs panel."""
+        self.toggle_logs_panel()
     
     def show_security_panel(self):
         """Show/focus security panel."""
@@ -357,8 +358,8 @@ class SmartHomeMainWindow:
         """Toggle sensor panel."""
         pass
     
-    def toggle_rules_panel(self):
-        """Toggle rules panel."""
+    def toggle_logs_panel(self):
+        """Toggle logs panel."""
         pass
     
     def toggle_security_panel(self):
@@ -366,6 +367,14 @@ class SmartHomeMainWindow:
         pass
     
     # Event handlers
+    def on_component_selected(self, component_id: str, component_name: str):
+        """Handle component selection from system view."""
+        # Update the logs panel with the selected component
+        self.logs_panel.set_selected_component(component_id, component_name)
+        
+        # Optionally switch to logs panel view
+        # This could be enhanced to show/focus the logs panel
+        
     def on_simulation_event(self, event):
         """Handle simulation events."""
         self.update_status_bar()
@@ -373,15 +382,15 @@ class SmartHomeMainWindow:
         self.home_view.on_simulation_event(event)
         self.system_view.refresh()  # Refresh system view on simulation events
         self.sensor_panel.on_simulation_event(event)
-        self.rules_panel.on_simulation_event(event)
+        self.logs_panel.on_simulation_event(event)
     
     def update_status_bar(self):
         """Update status bar information."""
         sensor_count = len(self.sim_engine.get_sensors())
-        rules_count = len(self.sim_engine.get_rules())
+        logs_count = len(self.logs_panel.log_buffer) if hasattr(self.logs_panel, 'log_buffer') else 0
         
         self.sensor_count_label.config(text=f"Sensors: {sensor_count}")
-        self.rules_count_label.config(text=f"Rules: {rules_count}")
+        self.logs_count_label.config(text=f"Logs: {logs_count}")
         
         # Update simulation time and FPS if running
         if hasattr(self.sim_engine, 'get_simulation_time'):
@@ -397,7 +406,7 @@ class SmartHomeMainWindow:
         self.home_view.refresh()
         self.system_view.refresh()
         self.sensor_panel.refresh()
-        self.rules_panel.refresh()
+        self.logs_panel.refresh_logs()
         self.update_status_bar()
     
     def update_title(self):

@@ -248,7 +248,10 @@ except Exception as e:
         def monitor_logs():
             while self.process and self.process.poll() is None:
                 try:
-                    output = self.process.stdout.readline()
+                    if self.process.stdout:
+                        output = self.process.stdout.readline()
+                    else:
+                        break
                     if output:
                         # Parse the log line and emit it
                         line = output.strip()
@@ -268,50 +271,104 @@ except Exception as e:
 
 
 class DatabaseServer(SystemComponent):
-    """Database Server component."""
+    """Enhanced Database Server component supporting SQLite and MongoDB."""
     
-    def __init__(self, component_id: str = "database", name: str = "Database Server"):
+    def __init__(self, component_id: str = "database", name: str = "Database Server", 
+                 db_type: str = "sqlite"):
         super().__init__(component_id, name, ComponentType.DATABASE)
-        self.port = 5432
-        self.db_path = "data/smart_home.db"
-        self.config = {
-            'type': 'sqlite',
-            'path': self.db_path,
-            'max_connections': 20,
-            'backup_enabled': True,
-            'backup_interval': 3600
-        }
+        self.db_type = db_type.lower()
+        
+        if self.db_type == "sqlite":
+            self.port = None  # SQLite doesn't use network port
+            self.db_path = "data/smart_home.db"
+            self.config = {
+                'type': 'sqlite',
+                'path': self.db_path,
+                'max_connections': 20,
+                'backup_enabled': True,
+                'backup_interval': 3600,
+                'pragma_settings': {
+                    'journal_mode': 'WAL',
+                    'synchronous': 'NORMAL',
+                    'cache_size': 10000
+                }
+            }
+        elif self.db_type == "mongodb":
+            self.port = 27017
+            self.config = {
+                'type': 'mongodb',
+                'host': 'localhost',
+                'port': self.port,
+                'database': 'smart_home',
+                'max_connections': 100,
+                'auth_enabled': False,
+                'username': '',
+                'password': '',
+                'backup_enabled': True,
+                'backup_interval': 3600,
+                'collections': ['sensors', 'devices', 'readings', 'events', 'users']
+            }
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+        
+        self.active_connections = 0
+        self.total_queries = 0
+        self.database_size = 0
     
     def _start_process(self):
         """Start the database server process."""
         try:
-            # Create database directory if it doesn't exist
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-            
-            # Create a database server simulation script
-            server_script = self._create_db_script()
-            
-            # Start the database process
-            self.process = subprocess.Popen([
-                'python', '-c', server_script
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            # Start log monitoring thread
-            self._start_log_monitoring()
-            
-            # Wait a moment and check if process is still running
-            time.sleep(1)
-            if self.process.poll() is None:
-                return True
+            if self.db_type == "sqlite":
+                return self._start_sqlite_process()
+            elif self.db_type == "mongodb":
+                return self._start_mongodb_process()
             else:
+                self.emit_log("ERROR", f"Unsupported database type: {self.db_type}")
                 return False
                 
         except Exception as e:
             self.emit_log("ERROR", f"Failed to start database server: {str(e)}")
             return False
     
-    def _create_db_script(self):
-        """Create the database server script."""
+    def _start_sqlite_process(self):
+        """Start SQLite database process."""
+        # Create database directory if it doesn't exist
+        os.makedirs(os.path.dirname(self.config['path']), exist_ok=True)
+        
+        # Create SQLite server simulation script
+        server_script = self._create_sqlite_script()
+        
+        # Start the SQLite process
+        self.process = subprocess.Popen([
+            'python', '-c', server_script
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        # Start log monitoring thread
+        self._start_log_monitoring()
+        
+        # Wait a moment and check if process is still running
+        time.sleep(1)
+        return self.process.poll() is None
+    
+    def _start_mongodb_process(self):
+        """Start MongoDB simulation process."""
+        # Create MongoDB server simulation script
+        server_script = self._create_mongodb_script()
+        
+        # Start the MongoDB simulation process
+        self.process = subprocess.Popen([
+            'python', '-c', server_script
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        # Start log monitoring thread
+        self._start_log_monitoring()
+        
+        # Wait a moment and check if process is still running
+        time.sleep(1)
+        return self.process.poll() is None
+    
+    def _create_sqlite_script(self):
+        """Create SQLite database server script."""
         return f"""
 import sqlite3
 import time
@@ -399,12 +456,162 @@ except Exception as e:
     db_server.log("ERROR", f"Database server error: {{e}}")
 """
     
+    def _create_mongodb_script(self):
+        """Create MongoDB database server script."""
+        return f"""
+import time
+import threading
+import os
+import json
+from datetime import datetime
+from collections import defaultdict
+
+class MongoDBSimulator:
+    def __init__(self, host="{self.config.get('host', 'localhost')}", port={self.config.get('port', 27017)}):
+        self.host = host
+        self.port = port
+        self.database_name = "{self.config.get('database', 'smart_home')}"
+        self.running = False
+        self.connections = 0
+        self.collections = {{}}
+        self.indexes = defaultdict(list)
+        
+        # Initialize collections
+        for collection in {self.config.get('collections', [])}:
+            self.collections[collection] = []
+    
+    def log(self, level, message):
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{{timestamp}}] DATABASE {{level}}: {{message}}")
+    
+    def initialize_database(self):
+        try:
+            self.log("INFO", f"Initializing MongoDB database: {{self.database_name}}")
+            
+            # Create default collections
+            default_collections = ['sensors', 'devices', 'readings', 'events', 'users']
+            for collection in default_collections:
+                if collection not in self.collections:
+                    self.collections[collection] = []
+                    self.log("INFO", f"Created collection: {{collection}}")
+            
+            # Create indexes
+            self.create_default_indexes()
+            
+            self.log("INFO", "MongoDB database initialized successfully")
+            return True
+            
+        except Exception as e:
+            self.log("ERROR", f"Failed to initialize database: {{e}}")
+            return False
+    
+    def create_default_indexes(self):
+        # Simulate creating indexes
+        indexes = {{
+            'sensors': ['{{"sensor_id": 1}}', '{{"type": 1}}', '{{"created_at": 1}}'],
+            'devices': ['{{"device_id": 1}}', '{{"category": 1}}', '{{"status": 1}}'],
+            'readings': ['{{"sensor_id": 1, "timestamp": 1}}', '{{"timestamp": 1}}'],
+            'events': ['{{"thing_id": 1, "timestamp": 1}}', '{{"event_type": 1}}'],
+            'users': ['{{"username": 1}}', '{{"email": 1}}']
+        }}
+        
+        for collection, collection_indexes in indexes.items():
+            self.indexes[collection].extend(collection_indexes)
+            self.log("INFO", f"Created indexes for {{collection}}: {{len(collection_indexes)}} indexes")
+    
+    def simulate_operations(self):
+        while self.running:
+            try:
+                # Simulate database operations
+                operation_types = ['insert', 'find', 'update', 'delete']
+                import random
+                
+                if random.random() < 0.3:  # 30% chance of operation
+                    op_type = random.choice(operation_types)
+                    collection = random.choice(list(self.collections.keys()))
+                    
+                    if op_type == 'insert':
+                        doc_id = len(self.collections[collection]) + 1
+                        self.collections[collection].append({{'_id': doc_id, 'timestamp': datetime.now().isoformat()}})
+                        self.log("DEBUG", f"Inserted document into {{collection}}")
+                    
+                    elif op_type == 'find':
+                        count = len(self.collections[collection])
+                        self.log("DEBUG", f"Found {{count}} documents in {{collection}}")
+                    
+                    elif op_type == 'update' and self.collections[collection]:
+                        self.log("DEBUG", f"Updated document in {{collection}}")
+                    
+                    elif op_type == 'delete' and self.collections[collection]:
+                        self.collections[collection].pop()
+                        self.log("DEBUG", f"Deleted document from {{collection}}")
+                
+                # Simulate connection activity
+                if random.random() < 0.1:  # 10% chance of connection change
+                    if self.connections > 0 and random.random() < 0.5:
+                        self.connections -= 1
+                        self.log("DEBUG", f"Connection closed. Active connections: {{self.connections}}")
+                    elif self.connections < {self.config.get('max_connections', 100)}:
+                        self.connections += 1
+                        self.log("DEBUG", f"New connection. Active connections: {{self.connections}}")
+                
+                time.sleep(5)  # Check every 5 seconds
+                
+            except Exception as e:
+                self.log("ERROR", f"Operation simulation error: {{e}}")
+                time.sleep(5)
+    
+    def start(self):
+        self.log("INFO", f"Starting MongoDB server on {{self.host}}:{{self.port}}")
+        
+        if not self.initialize_database():
+            return False
+        
+        self.running = True
+        
+        # Start operation simulation in a separate thread
+        self.ops_thread = threading.Thread(target=self.simulate_operations, daemon=True)
+        self.ops_thread.start()
+        
+        self.log("INFO", f"MongoDB server started successfully")
+        self.log("INFO", f"Database: {{self.database_name}}")
+        self.log("INFO", f"Collections: {{', '.join(self.collections.keys())}}")
+        self.log("INFO", f"Listening on {{self.host}}:{{self.port}}")
+        
+        # Keep the server running
+        try:
+            while self.running:
+                self.log("INFO", f"MongoDB heartbeat - Active connections: {{self.connections}}, Collections: {{len(self.collections)}}")
+                time.sleep(30)  # Heartbeat every 30 seconds
+        except KeyboardInterrupt:
+            self.log("INFO", "Received shutdown signal")
+        finally:
+            self.stop()
+    
+    def stop(self):
+        self.log("INFO", "Stopping MongoDB server")
+        self.running = False
+        self.log("INFO", "MongoDB server stopped")
+
+# Create and start MongoDB server
+mongo_server = MongoDBSimulator()
+try:
+    mongo_server.start()
+except KeyboardInterrupt:
+    mongo_server.log("INFO", "MongoDB server shutting down")
+except Exception as e:
+    mongo_server.log("ERROR", f"MongoDB server error: {{e}}")
+"""
+    
     def _start_log_monitoring(self):
         """Start monitoring logs from the database process."""
         def monitor_logs():
             while self.process and self.process.poll() is None:
                 try:
-                    output = self.process.stdout.readline()
+                    if self.process.stdout:
+                        output = self.process.stdout.readline()
+                    else:
+                        break
                     if output:
                         line = output.strip()
                         if "] DATABASE " in line:
@@ -511,7 +718,10 @@ except Exception as e:
         def monitor_logs():
             while self.process and self.process.poll() is None:
                 try:
-                    output = self.process.stdout.readline()
+                    if self.process.stdout:
+                        output = self.process.stdout.readline()
+                    else:
+                        break
                     if output:
                         line = output.strip()
                         if "] MQTT_BROKER " in line:
